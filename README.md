@@ -2,6 +2,9 @@
 
 ### 概要
 
+StackName: udagramMiyaoka
+s3BucketName: udagram-test-seiya
+
 - サーバをprivateサブネットに配置。
 - apache server
 - s3

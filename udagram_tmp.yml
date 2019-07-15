@@ -1,0 +1,12 @@
+Description: >
+  udagram miyaoka test stack
+Parameters:
+  EnvironmentName:
+    Description: serfix
+    Type: String
+Resources:
+  RecordServiceS3Bucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    Properties:
+      BucketName: "udagram-test-seiya"
