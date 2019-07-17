@@ -21,9 +21,25 @@ Resources:
           Value: !Ref EnvironmentName
   RecordServiceS3Bucket:
     Type: AWS::S3::Bucket
-    DeletionPolicy: Retain
     Properties:
       BucketName: "udagram-test-seiya"
+  BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      PolicyDocument:
+        Id: MyPolicy
+        Version: 2012-10-17
+        Statement:
+          - Sid: PublicReadForGetBucketObjects
+            Effect: Allow
+            Principal: '*'
+            Action: 's3:GetObject'
+            Resource: !Join
+              - ''
+              - - 'arn:aws:s3:::'
+                - !Ref RecordServiceS3Bucket
+                - /*
+      Bucket: !Ref RecordServiceS3Bucket
   InternetGateWay:
     Type: AWS::EC2::InternetGateway
     Properties:
@@ -113,10 +129,10 @@ Resources:
           Ref: ec2Role
   RootInstanceProfile:
     Type: "AWS::IAM::InstanceProfile"
-    Properties: 
+    Properties:
       Path: "/"
-      Roles: 
-        - 
+      Roles:
+        -
           Ref: ec2Role
   WebAppLaunchConfig:
     Type: AWS::AutoScaling::LaunchConfiguration
@@ -124,12 +140,13 @@ Resources:
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
-          apt-get update -y
-          apt-get install unzip awscli -y
-          apt-get install apache2 -y
-          systemctl start apache2.service
+          sudo apt update -y
+          sudo apt install unzip awscli -y
+          sudo apt install apache2 -y
+          sudo systemctl start apache2.service
+          sudo chown ubuntu:ubuntu /var/www/ -R
           cd /var/www/html
-          aws s3 cp s3://udagram-test-seiya/*
+          aws s3 sync s3://udagram-test-seiya .
       ImageId: ami-07b4f3c02c7f83d59
       IamInstanceProfile: !Ref RootInstanceProfile
       KeyName: !Ref KeyPair
@@ -143,8 +160,22 @@ Resources:
   WebAppGroup:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
-      # AvailabilityZones: !GetAZs ''
       VPCZoneIdentifier: [ !Ref PublicSubnet1 ]
       LaunchConfigurationName: !Ref WebAppLaunchConfig
-      MaxSize: 4
+      MaxSize: 2
       MinSize: 2
+  LBSecGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: LB http allow
+      VpcId: !Ref Vpc
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
