@@ -18,6 +18,7 @@ s3BucketName: udagram-test-seiya
 - keyなしで作成してあとからkeyを付与はできなかった, なのでインスタンスを増やしてそちらでテスト
 - vpcに関連づけられるmain route tableを変更してみる
 - routeテーブルの設定ができていないとトラッフィックの処理をしないのでsshできない
+- aws s3 sync src/ s3://udagram-test-seiya一旦実行
 
 configure
 
