@@ -1,9 +1,64 @@
 ## high avaliavility submit
 
-### 概要
+### ResourceName
 
 StackName: udagramMiyaoka
 s3BucketName: udagram-test-seiya
+
+### About paramter file
+
+ignore parameter file. need parameter is
+
+```json
+[
+  {
+    "ParameterKey": "EnvironmentName",
+    "ParameterValue": "Your value"
+  },
+  {
+    "ParameterKey": "PrivateSubnet1CIDR",
+    "ParameterValue": "Your value"
+  },
+  {
+    "ParameterKey": "PrivateSubnet2CIDR",
+    "ParameterValue": "Your value"
+  },
+  {
+    "ParameterKey": "KeyPair",
+    "ParameterValue": "Your value"
+  },
+  {
+    "ParameterKey": "S3BucketName",
+    "ParameterValue": "Your value"
+  }
+]
+```
+
+
+
+### how to
+
+*create stack*
+
+```sh
+./create.sh stack-name udagram_tmp.yml udagram_parameter.json
+```
+
+*update stack*
+
+```sh
+./update.sh stack-name udagram_tmp.yml udagram_parameter.json
+```
+
+*delete stack*
+
+```sh
+./delete.sh stack-name
+```
+
+
+
+### japanese memo
 
 - サーバをprivateサブネットに配置。
 - apache server

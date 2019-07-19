@@ -13,6 +13,9 @@ Parameters:
   KeyPair:
     Description: Key  params
     Type: AWS::EC2::KeyPair::KeyName
+  S3BucketName:
+    Description: use bucket name
+    Type: String
 Resources:
   Vpc:
     Type: AWS::EC2::VPC
@@ -22,33 +25,35 @@ Resources:
       Tags:
         - Key: Name
           Value: !Ref EnvironmentName
-  RecordServiceS3Bucket:
-    Type: AWS::S3::Bucket
-    Properties:
-      BucketName: "udagram-test-seiya"
-  BucketPolicy:
-    Type: AWS::S3::BucketPolicy
-    Properties:
-      PolicyDocument:
-        Id: MyPolicy
-        Version: 2012-10-17
-        Statement:
-          - Sid: PublicReadForGetBucketObjects
-            Effect: Allow
-            Principal: '*'
-            Action: 's3:GetObject'
-            Resource: !Join
-              - ''
-              - - 'arn:aws:s3:::'
-                - !Ref RecordServiceS3Bucket
-                - /*
-      Bucket: !Ref RecordServiceS3Bucket
+  # RecordServiceS3Bucket:
+  #   Type: AWS::S3::Bucket
+  #   DeletionPolicy: Retain
+  #   Properties:
+  #     BucketName: !Ref S3BucketName
+  # BucketPolicy:
+  #   Type: AWS::S3::BucketPolicy
+  #   DeletionPolicy: Retain
+  #   Properties:
+  #     PolicyDocument:
+  #       Id: MyPolicy
+  #       Version: 2012-10-17
+  #       Statement:
+  #         - Sid: PublicReadForGetBucketObjects
+  #           Effect: Allow
+  #           Principal: '*'
+  #           Action: 's3:GetObject'
+  #           Resource: !Join
+  #             - ''
+  #             - - 'arn:aws:s3:::'
+  #               - !Ref RecordServiceS3Bucket
+  #               - /*
+  #     Bucket: !Ref RecordServiceS3Bucket
   InternetGateWay:
     Type: AWS::EC2::InternetGateway
     Properties:
         Tags:
-            - Key: Name
-              Value: !Ref EnvironmentName
+          - Key: Name
+            Value: !Ref EnvironmentName
   AttachGateway:
     Type: AWS::EC2::VPCGatewayAttachment
     Properties:
@@ -69,7 +74,7 @@ Resources:
     Properties:
       AvailabilityZone: !Select [ 1, !GetAZs '' ]
       VpcId: !Ref Vpc
-      CidrBlock: !Ref PrivateSubnet1CIDR
+      CidrBlock: !Ref PrivateSubnet2CIDR
       MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
@@ -114,14 +119,14 @@ Resources:
     Properties:
       RouteTableId: !Ref PrivateRouteTable1
       DestinationCidrBlock: 0.0.0.0/0
-      NatGatewayId: !Ref NatGateWay1
+      GatewayId: !Ref InternetGateWay
   DefaultPrivateRoute2:
     Type: AWS::EC2::Route
     DependsOn: AttachGateway
     Properties:
-      RouteTableId: !Ref PrivateRouteTable1
+      RouteTableId: !Ref PrivateRouteTable2
       DestinationCidrBlock: 0.0.0.0/0
-      NatGatewayId: !Ref NatGateWay2
+      GatewayId: !Ref InternetGateWay
   PrivateSubnet1RouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
@@ -151,13 +156,13 @@ Resources:
           FromPort: 0
           ToPort: 65535
           CidrIp: 0.0.0.0/0
-  ec2Role: 
+  ec2Role:
     Type: "AWS::IAM::Role"
-    Properties: 
-      AssumeRolePolicyDocument: 
+    Properties:
+      AssumeRolePolicyDocument:
         Version: "2012-10-17"
-        Statement: 
-          - 
+        Statement:
+          -
             Effect: "Allow"
             Principal:
               Service:
@@ -175,7 +180,7 @@ Resources:
           -
             Effect: "Allow"
             Action: "*"
-            Resource: !GetAtt RecordServiceS3Bucket.Arn
+            Resource: !Join ["", ["arn:aws:s3:::", !Ref S3BucketName]]
       Roles:
         -
           Ref: ec2Role
@@ -193,7 +198,7 @@ Resources:
         Fn::Base64: !Sub |
           #!/bin/bash
           sudo apt update -y
-          sudo apt install unzip awscli -y
+          sudo apt install awscli -y
           sudo apt install apache2 -y
           sudo systemctl start apache2.service
           sudo chown ubuntu:ubuntu /var/www/ -R
@@ -214,15 +219,19 @@ Resources:
     Properties:
       VPCZoneIdentifier: [ !Ref PrivateSubnet1 ]
       LaunchConfigurationName: !Ref WebAppLaunchConfig
-      MaxSize: 2
-      MinSize: 1
+      MaxSize: 3
+      MinSize: 2
+      TargetGroupARNs:
+        - Ref: WebAppTargetGroup
   WebAppGroup2:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
       VPCZoneIdentifier: [ !Ref PrivateSubnet2 ]
       LaunchConfigurationName: !Ref WebAppLaunchConfig
-      MaxSize: 2
-      MinSize: 1
+      MaxSize: 3
+      MinSize: 2
+      TargetGroupARNs:
+        - Ref: WebAppTargetGroup
   LBSecGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -261,13 +270,13 @@ Resources:
     Type: AWS::ElasticLoadBalancingV2::ListenerRule
     Properties:
       Actions:
-      - Type: forward
-        TargetGroupArn:
-          Ref: WebAppTargetGroup
+        - Type: forward
+          TargetGroupArn:
+            Ref: WebAppTargetGroup
       Conditions:
-      - Field: path-pattern
-        Values:
-        - [/]
+        - Field: path-pattern
+          Values:
+          - "/"
       ListenerArn:
         Ref: Listener
       Priority: 1
@@ -281,4 +290,9 @@ Resources:
       Protocol: HTTP
       VpcId:
         Ref: Vpc
-
+Outputs:
+  LoadBalancer:
+    Description: loadbarancer arn name
+    Value: !Join [ "", [ "http://", !GetAtt LoadBalancer.DNSName ] ]
+    Export:
+      Name: !Sub ${EnvironmentName}-DNSName
