@@ -10,9 +10,6 @@ Parameters:
   PrivateSubnet2CIDR:
     Type: String
     Default: 10.0.3.0/24
-  KeyPair:
-    Description: Key  params
-    Type: AWS::EC2::KeyPair::KeyName
   S3BucketName:
     Description: use bucket name
     Type: String
@@ -206,10 +203,9 @@ Resources:
           aws s3 sync s3://udagram-test-seiya .
       ImageId: ami-07b4f3c02c7f83d59
       IamInstanceProfile: !Ref RootInstanceProfile
-      KeyName: !Ref KeyPair
       SecurityGroups:
       - Ref: WebServerSecGroup
-      InstanceType: t2.small
+      InstanceType: t3.small
       BlockDeviceMappings:
       - DeviceName: "/dev/sdk"
         Ebs:
