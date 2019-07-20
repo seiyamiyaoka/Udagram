@@ -5,36 +5,6 @@
 StackName: udagramMiyaoka
 s3BucketName: udagram-test-seiya
 
-### About paramter file
-
-ignore parameter file. need parameter is
-
-```json
-[
-  {
-    "ParameterKey": "EnvironmentName",
-    "ParameterValue": "Your value"
-  },
-  {
-    "ParameterKey": "PrivateSubnet1CIDR",
-    "ParameterValue": "Your value"
-  },
-  {
-    "ParameterKey": "PrivateSubnet2CIDR",
-    "ParameterValue": "Your value"
-  },
-  {
-    "ParameterKey": "KeyPair",
-    "ParameterValue": "Your value"
-  },
-  {
-    "ParameterKey": "S3BucketName",
-    "ParameterValue": "Your value"
-  }
-]
-```
-
-
 
 ### how to
 
